@@ -41,6 +41,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ],
   experiments: {
     typedRoutes: true,
+    baseUrl: '/do-app',
   },
   newArchEnabled: true,
 });
