@@ -14,12 +14,14 @@ interface AppState {
   activeConversationId: string | null;
   isOnboarded: boolean;
   quickSuggestions: string[];
+  geminiApiKey: string;
   setTheme: (theme: Theme) => void;
   setAIProcessing: (isProcessing: boolean) => void;
   setCurrentMode: (mode: AppMode) => void;
   setActiveConversation: (id: string | null) => void;
   setOnboarded: (onboarded: boolean) => void;
   setQuickSuggestions: (suggestions: string[]) => void;
+  setGeminiApiKey: (key: string) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -31,12 +33,14 @@ export const useAppStore = create<AppState>()(
       activeConversationId: null,
       isOnboarded: false,
       quickSuggestions: ['Order food', 'Book a cab', 'Schedule a meeting', 'Check emails'],
+      geminiApiKey: process.env.EXPO_PUBLIC_GEMINI_API_KEY || '',
       setTheme: (theme) => set({ theme }),
       setAIProcessing: (isAIProcessing) => set({ isAIProcessing }),
       setCurrentMode: (currentMode) => set({ currentMode }),
       setActiveConversation: (activeConversationId) => set({ activeConversationId }),
       setOnboarded: (isOnboarded) => set({ isOnboarded }),
       setQuickSuggestions: (quickSuggestions) => set({ quickSuggestions }),
+      setGeminiApiKey: (geminiApiKey) => set({ geminiApiKey }),
     }),
     {
       name: 'app-storage',
