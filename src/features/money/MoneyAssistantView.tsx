@@ -1,14 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
-
-interface Expense {
-  id: string;
-  name: string;
-  category: 'Food' | 'Shopping' | 'Transport' | 'Utilities' | 'Fun';
-  amount: number;
-  date: string;
-  icon: string;
-}
+import { useUserDataStore, Expense } from '@/stores/userDataStore';
 
 interface Bill {
   id: string;
@@ -20,14 +12,6 @@ interface Bill {
   avatarColor: string;
 }
 
-const INITIAL_EXPENSES: Expense[] = [
-  { id: '1', name: 'Whole Foods & Fresh Groceries', category: 'Food', amount: 4850, date: 'Yesterday', icon: '🍔' },
-  { id: '2', name: 'Zara Autumn Jacket', category: 'Shopping', amount: 3100, date: '3 days ago', icon: '🛍️' },
-  { id: '3', name: 'Uber & Metro Passes', category: 'Transport', amount: 2420, date: 'This week', icon: '🚗' },
-  { id: '4', name: 'Electricity & High-speed Wifi', category: 'Utilities', amount: 2850, date: 'Oct 4', icon: '⚡' },
-  { id: '5', name: 'Cinema & Weekend Drinks', category: 'Fun', amount: 1630, date: 'Oct 2', icon: '🎉' },
-];
-
 const INITIAL_BILLS: Bill[] = [
   { id: 'b1', name: 'Netflix 4K Ultra', amount: 649, dueText: 'Due Tomorrow', category: 'Entertainment', isPaid: false, avatarColor: 'bg-red-500/20 text-red-400' },
   { id: 'b2', name: 'Water & Municipality Board', amount: 320, dueText: 'Due in 5 days', category: 'Utilities', isPaid: false, avatarColor: 'bg-blue-500/20 text-blue-400' },
@@ -38,11 +22,12 @@ const BUDGET_PRESETS = [15000, 25000, 40000, 60000];
 const CATEGORIES = ['All', 'Food', 'Shopping', 'Transport', 'Utilities', 'Fun'] as const;
 
 export default function MoneyAssistantView() {
-  const [budgetLimit, setBudgetLimit] = useState(25000);
-  const [expenses, setExpenses] = useState<Expense[]>(INITIAL_EXPENSES);
+  // ── Persisted store ──
+  const { expenses, addExpense, budgetLimit, setBudgetLimit } = useUserDataStore();
+
   const [bills, setBills] = useState<Bill[]>(INITIAL_BILLS);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  
+
   // Quick Add Expense Form state
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -56,7 +41,7 @@ export default function MoneyAssistantView() {
   };
 
   const adjustBudget = (delta: number) => {
-    setBudgetLimit(prev => Math.max(5000, prev + delta));
+    setBudgetLimit(Math.max(5000, budgetLimit + delta));
   };
 
   const handleAddExpense = () => {
@@ -74,38 +59,33 @@ export default function MoneyAssistantView() {
       Fun: '🎉'
     };
 
-    const newExpense: Expense = {
-      id: Date.now().toString(),
+    addExpense({
       name: newTitle.trim(),
       category: newCategory,
       amount: Math.round(parsed),
       date: 'Just now',
-      icon: iconMap[newCategory]
-    };
-
-    setExpenses([newExpense, ...expenses]);
+      icon: iconMap[newCategory],
+    });
     setNewTitle('');
     setNewAmount('');
     setShowAddForm(false);
-    showToast(`✓ Logged ₹${parsed.toLocaleString()} for ${newExpense.name}`);
+    showToast(`✓ Logged ₹${parsed.toLocaleString()} for ${newTitle.trim()}`);
   };
 
   const handlePayBill = (billId: string) => {
     const target = bills.find(b => b.id === billId);
     if (!target) return;
 
-    // Mark bill paid
+    // Mark bill paid in local state
     setBills(prev => prev.map(b => b.id === billId ? { ...b, isPaid: true } : b));
-    // Also add to expenses automatically
-    const newExp: Expense = {
-      id: Date.now().toString(),
+    // Also add to persisted expenses
+    addExpense({
       name: `Paid: ${target.name}`,
       category: 'Utilities',
       amount: target.amount,
       date: 'Just now',
-      icon: '💳'
-    };
-    setExpenses([newExp, ...expenses]);
+      icon: '💳',
+    });
     showToast(`💳 Paid ₹${target.amount.toLocaleString()} for ${target.name}`);
   };
 

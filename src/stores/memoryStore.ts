@@ -1,23 +1,8 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { createPersistStorage } from '@/lib/persistStorage';
 
-let storage: any;
-try {
-  const { MMKV } = require('react-native-mmkv');
-  const mmkv = new MMKV({ id: 'memory-store' });
-  storage = {
-    setItem: (name: string, value: string) => mmkv.set(name, value),
-    getItem: (name: string) => mmkv.getString(name) ?? null,
-    removeItem: (name: string) => mmkv.delete(name),
-  };
-} catch {
-  const map = new Map<string, string>();
-  storage = {
-    setItem: (name: string, value: string) => map.set(name, value),
-    getItem: (name: string) => map.get(name) ?? null,
-    removeItem: (name: string) => map.delete(name),
-  };
-}
+const storage = createPersistStorage('memory-store');
 
 interface Location {
   latitude: number;

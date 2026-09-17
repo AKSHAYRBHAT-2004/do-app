@@ -5,11 +5,23 @@ import CommandInput from '@/components/ui/CommandInput';
 import AnimatedOrb from '@/components/ui/AnimatedOrb';
 import QuickSuggestion from '@/components/ui/QuickSuggestion';
 import GlassCard from '@/components/ui/GlassCard';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function HomeScreen() {
   const router = useRouter();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [inputText, setInputText] = useState('');
+  const { user, profile } = useAuthStore();
+
+  // Greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const firstName = profile?.name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || '';
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -47,13 +59,41 @@ export default function HomeScreen() {
     { icon: '🏠', label: 'Home Autopilot', route: '/feature/home-autopilot' },
   ];
 
+  // Today summary — tap each to navigate to the right feature
+  const todayItems = [
+    {
+      icon: '💰',
+      label: 'Check bills & expenses',
+      sublabel: 'Money Assistant',
+      route: '/feature/money',
+    },
+    {
+      icon: '🏠',
+      label: 'Grocery & chore status',
+      sublabel: 'Home Autopilot',
+      route: '/feature/home-autopilot',
+    },
+    {
+      icon: '🧠',
+      label: 'Your saved memories',
+      sublabel: 'Memory Vault',
+      route: '/feature/memory',
+    },
+  ];
+
   return (
     <ScrollView className="flex-1 bg-[#0A0A0F]" contentContainerStyle={{ padding: 24, paddingTop: 60 }}>
       {/* Header with Animated Orb */}
       <Animated.View style={{ opacity: fadeAnim }} className="items-center mb-8">
         <AnimatedOrb isActive={false} size={60} />
         <Text className="text-white text-3xl font-bold mt-4 tracking-wider">DO</Text>
-        <Text className="text-gray-400 text-sm mt-1">AI Life Operating System</Text>
+        {firstName ? (
+          <Text className="text-gray-400 text-sm mt-1">
+            {getGreeting()}, {firstName} 👋
+          </Text>
+        ) : (
+          <Text className="text-gray-400 text-sm mt-1">AI Life Operating System</Text>
+        )}
       </Animated.View>
 
       {/* Main Command Input */}
@@ -86,23 +126,31 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* Today Summary */}
+      {/* Today Summary — tappable, navigates to real features */}
       <View className="mb-6">
         <Text className="text-gray-500 text-xs uppercase tracking-widest mb-3 ml-1">Today</Text>
-        <GlassCard className="p-5" onPress={() => router.push('/(tabs)/dashboard')}>
-          <View className="flex-row items-center mb-3">
-            <Text className="text-xl mr-3">📋</Text>
-            <Text className="text-white text-base">3 tasks pending</Text>
-          </View>
-          <View className="flex-row items-center mb-3">
-            <Text className="text-xl mr-3">💰</Text>
-            <Text className="text-white text-base">1 bill due tomorrow</Text>
-          </View>
-          <View className="flex-row items-center">
-            <Text className="text-xl mr-3">📅</Text>
-            <Text className="text-white text-base">2 events today</Text>
-          </View>
-        </GlassCard>
+        <View className="gap-2.5">
+          {todayItems.map((item, i) => (
+            <TouchableOpacity
+              key={i}
+              onPress={() => router.push(item.route as any)}
+              activeOpacity={0.8}
+            >
+              <GlassCard className="px-5 py-4">
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1">
+                    <Text className="text-xl mr-3">{item.icon}</Text>
+                    <View>
+                      <Text className="text-white text-sm font-semibold">{item.label}</Text>
+                      <Text className="text-gray-500 text-xs mt-0.5">{item.sublabel}</Text>
+                    </View>
+                  </View>
+                  <Text className="text-gray-600 text-lg">›</Text>
+                </View>
+              </GlassCard>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       {/* What Should I Do Now? Button */}

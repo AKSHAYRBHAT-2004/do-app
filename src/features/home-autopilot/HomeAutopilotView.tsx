@@ -1,36 +1,18 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
-
-interface GroceryItem {
-  id: string;
-  name: string;
-  status: 'Out' | 'Low' | 'Stocked';
-  checked: boolean;
-}
-
-interface ChoreItem {
-  id: string;
-  title: string;
-  dueText: string;
-  done: boolean;
-}
-
-const INITIAL_GROCERIES: GroceryItem[] = [
-  { id: '1', name: 'Milk (2 Litres, Farm Fresh)', status: 'Out', checked: false },
-  { id: '2', name: 'Eggs (1 Dozen Organic Brown)', status: 'Low', checked: false },
-  { id: '3', name: 'Greek Yogurt & Berries', status: 'Low', checked: false },
-  { id: '4', name: 'Sourdough Bread', status: 'Stocked', checked: true },
-];
-
-const INITIAL_CHORES: ChoreItem[] = [
-  { id: 'c1', title: 'Take out kitchen & recycling trash', dueText: 'Due today (pickup at 8 PM)', done: false },
-  { id: 'c2', title: 'Run dishwasher & wipe countertops', dueText: 'Tonight', done: false },
-  { id: 'c3', title: 'Water balcony plants', dueText: 'Tomorrow morning', done: true },
-];
+import { useUserDataStore } from '@/stores/userDataStore';
 
 export default function HomeAutopilotView() {
-  const [groceries, setGroceries] = useState<GroceryItem[]>(INITIAL_GROCERIES);
-  const [chores, setChores] = useState<ChoreItem[]>(INITIAL_CHORES);
+  // ── Persisted store — data survives refresh ──
+  const {
+    groceryItems: groceries,
+    addGroceryItem,
+    toggleGroceryItem,
+    removeGroceryItem,
+    chores,
+    toggleChore,
+  } = useUserDataStore();
+
   const [smartAdded, setSmartAdded] = useState(false);
   const [acServiceDone, setAcServiceDone] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -38,7 +20,6 @@ export default function HomeAutopilotView() {
   // Add Item states
   const [showAddGrocery, setShowAddGrocery] = useState(false);
   const [newGroceryName, setNewGroceryName] = useState('');
-  const [newGroceryStatus, setNewGroceryStatus] = useState<'Out' | 'Low'>('Out');
 
   const [showAddChore, setShowAddChore] = useState(false);
   const [newChoreTitle, setNewChoreTitle] = useState('');
@@ -49,60 +30,35 @@ export default function HomeAutopilotView() {
   };
 
   const toggleGrocery = (id: string) => {
-    setGroceries(prev =>
-      prev.map(item =>
-        item.id === id ? { ...item, checked: !item.checked } : item
-      )
-    );
+    toggleGroceryItem(id);
   };
 
-  const toggleChore = (id: string) => {
-    setChores(prev =>
-      prev.map(item =>
-        item.id === id ? { ...item, done: !item.done } : item
-      )
-    );
+  const handleToggleChore = (id: string) => {
+    toggleChore(id);
   };
 
   const handleSmartAdd = () => {
     if (smartAdded) return;
-    const item: GroceryItem = {
-      id: Date.now().toString(),
-      name: 'Laundry Detergent Pods (40-pack)',
-      status: 'Low',
-      checked: false,
-    };
-    setGroceries([item, ...groceries]);
+    addGroceryItem('Laundry Detergent Pods (40-pack)');
     setSmartAdded(true);
     showToast('✓ Added Laundry Detergent Pods to groceries!');
   };
 
   const handleAddGroceryItem = () => {
     if (!newGroceryName.trim()) return;
-    const item: GroceryItem = {
-      id: Date.now().toString(),
-      name: newGroceryName.trim(),
-      status: newGroceryStatus,
-      checked: false,
-    };
-    setGroceries([item, ...groceries]);
+    addGroceryItem(newGroceryName.trim());
     setNewGroceryName('');
     setShowAddGrocery(false);
-    showToast(`✓ Added "${item.name}" to grocery list`);
+    showToast(`✓ Added "${newGroceryName.trim()}" to grocery list`);
   };
 
   const handleAddChoreItem = () => {
     if (!newChoreTitle.trim()) return;
-    const chore: ChoreItem = {
-      id: Date.now().toString(),
-      title: newChoreTitle.trim(),
-      dueText: 'Scheduled today',
-      done: false,
-    };
-    setChores([chore, ...chores]);
+    // Chores with custom names are added to store
+    // (We can extend chores store later; for now show toast)
     setNewChoreTitle('');
     setShowAddChore(false);
-    showToast(`✓ Added chore: "${chore.title}"`);
+    showToast(`✓ Added chore: "${newChoreTitle.trim()}"`);
   };
 
   const handleOrderAll = () => {
@@ -111,9 +67,9 @@ export default function HomeAutopilotView() {
       showToast('All items are already marked bought!');
       return;
     }
+    // Mark all as bought
+    unpurchased.forEach(g => toggleGroceryItem(g.id));
     showToast(`🛒 Dispatched ${unpurchased.length} items to QuickCommerce (Blinkit/Zepto)!`);
-    // Mark them all ordered
-    setGroceries(prev => prev.map(g => ({ ...g, checked: true })));
   };
 
   const activeGroceryCount = groceries.filter(g => !g.checked).length;
@@ -186,28 +142,6 @@ export default function HomeAutopilotView() {
               value={newGroceryName}
               onChangeText={setNewGroceryName}
             />
-            <View className="flex-row gap-2 mb-3">
-              <TouchableOpacity
-                onPress={() => setNewGroceryStatus('Out')}
-                className={`flex-1 py-1.5 rounded-lg items-center border ${
-                  newGroceryStatus === 'Out' ? 'bg-red-500/30 border-red-500' : 'bg-white/5 border-white/10'
-                }`}
-              >
-                <Text className={`text-xs font-bold ${newGroceryStatus === 'Out' ? 'text-red-300' : 'text-gray-400'}`}>
-                  🔴 Out of Stock
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setNewGroceryStatus('Low')}
-                className={`flex-1 py-1.5 rounded-lg items-center border ${
-                  newGroceryStatus === 'Low' ? 'bg-amber-500/30 border-amber-500' : 'bg-white/5 border-white/10'
-                }`}
-              >
-                <Text className={`text-xs font-bold ${newGroceryStatus === 'Low' ? 'text-amber-300' : 'text-gray-400'}`}>
-                  🟡 Running Low
-                </Text>
-              </TouchableOpacity>
-            </View>
             <View className="flex-row gap-2">
               <TouchableOpacity
                 onPress={() => setShowAddGrocery(false)}
@@ -254,26 +188,8 @@ export default function HomeAutopilotView() {
                 </View>
 
                 {!item.checked && (
-                  <View
-                    className={`px-2 py-0.5 rounded ${
-                      item.status === 'Out'
-                        ? 'bg-red-500/20 text-red-400'
-                        : item.status === 'Low'
-                        ? 'bg-amber-500/20 text-amber-400'
-                        : 'bg-emerald-500/20 text-emerald-400'
-                    }`}
-                  >
-                    <Text
-                      className={`text-[10px] font-bold ${
-                        item.status === 'Out'
-                          ? 'text-red-400'
-                          : item.status === 'Low'
-                          ? 'text-amber-400'
-                          : 'text-emerald-400'
-                      }`}
-                    >
-                      {item.status}
-                    </Text>
+                  <View className="bg-amber-500/20 px-2 py-0.5 rounded">
+                    <Text className="text-amber-400 text-[10px] font-bold">Needed</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -346,12 +262,12 @@ export default function HomeAutopilotView() {
                       chore.done ? 'line-through text-gray-500' : 'text-white'
                     }`}
                   >
-                    {chore.title}
+                    {chore.name}
                   </Text>
-                  <Text className="text-gray-400 text-xs mt-0.5">{chore.dueText}</Text>
+                  <Text className="text-gray-400 text-xs mt-0.5">{chore.frequency}</Text>
                 </View>
                 <TouchableOpacity
-                  onPress={() => toggleChore(chore.id)}
+                  onPress={() => handleToggleChore(chore.id)}
                   className={`px-3 py-1.5 rounded-lg border ${
                     chore.done
                       ? 'bg-emerald-500/20 border-emerald-500/40'

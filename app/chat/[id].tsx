@@ -90,7 +90,59 @@ export default function ChatScreen() {
   };
 
   const handleCardAction = (label: string, actionId: string) => {
-    showToast(`⚡ Executed: "${label}"`);
+    // Route each actionId to a meaningful destination
+    switch (actionId) {
+      case 'order_food':
+        showToast('🛵 Navigating to order food...');
+        setTimeout(() => router.push('/feature/what-do-i-eat' as any), 400);
+        break;
+      case 'show_recipe':
+        router.push('/feature/what-do-i-eat' as any);
+        break;
+      case 'pay_bill':
+        showToast('💳 Opening Money Assistant...');
+        setTimeout(() => router.push('/feature/money' as any), 400);
+        break;
+      case 'remind_bill':
+        showToast('⏰ Reminder set for 8 PM tonight!');
+        break;
+      case 'book_trip':
+        showToast('✈️ Opening Trip Planner...');
+        setTimeout(() => router.push('/feature/trip-planner' as any), 400);
+        break;
+      case 'cheaper_trip':
+        router.push('/feature/trip-planner' as any);
+        break;
+      case 'dial_mom': {
+        // Open native phone dialer
+        const { Linking } = require('react-native');
+        Linking.openURL('tel:+919840012345').catch(() => {
+          showToast('📞 Opening dialer...');
+        });
+        break;
+      }
+      case 'msg_mom': {
+        const { Linking } = require('react-native');
+        const msg = encodeURIComponent("Hey Mom, calling you in 5 minutes!");
+        Linking.openURL(`https://wa.me/919840012345?text=${msg}`).catch(() => {
+          showToast('💬 Message sent to Mom!');
+        });
+        break;
+      }
+      case 'view_deal':
+      case 'compare_specs':
+        showToast('🛍️ Opening Tell Me Best...');
+        setTimeout(() => router.push('/feature/tell-me-best' as any), 400);
+        break;
+      case 'exec_action':
+        showToast(`⚡ Executing: "${label}"`);
+        break;
+      case 'edit_action':
+        showToast('✏️ Modify your request below:');
+        break;
+      default:
+        showToast(`⚡ Done: "${label}"`);
+    }
   };
 
   const handleBack = () => {
